@@ -81,20 +81,11 @@ def get_json(res: list[Response], **kwargs) -> list:
         temp = flatten(res)
     results = []
     for r in temp:
-        try:
-            data = r.json()
-            if cursor:
-                results.append([data, cursor])
-            else:
-                results.append(data)
-        except Exception as e:
-            print('Cannot parse JSON response', e)
-            print(dedent(f'''{ORANGE}
-            Checklist:
-                1. Log-in via the browser and confirm your account is not blocked, or has pending security challenges.
-                2. Copy the `ct0` and `auth_token` cookies from the browser.
-                3. Re-run your program using these new cookies.
-            {RESET}'''))
+        data = r.json()
+        if cursor:
+            results.append([data, cursor])
+        else:
+            results.append(data)
     return results
 
 
