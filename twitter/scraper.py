@@ -612,7 +612,7 @@ class Scraper:
         headers = self.session.headers if self.guest else get_headers(self.session)
         cookies = self.session.cookies
         async with AsyncClient(limits=Limits(max_connections=MAX_ENDPOINT_LIMIT),
-                headers=headers, cookies=cookies, timeout=20, proxy=self.proxy) as c:
+                headers=headers, cookies=cookies, timeout=20, proxies=self.proxy) as c:
             tasks = (self._paginate(c, operation, **q, **kwargs) for q in queries)
             if self.pbar:
                 return await tqdm_asyncio.gather(*tasks, desc=operation[-1])
