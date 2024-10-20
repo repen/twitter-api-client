@@ -32,7 +32,8 @@ if platform.system() != 'Windows':
 
 
 class Scraper:
-    def __init__(self, email: str = None, username: str = None, password: str = None, session: Client = None, **kwargs):
+    def __init__(self, email: str = None, username: str = None, password: str = None,
+                 session: Client = None, proxy: str = None,**kwargs):
         self.save = kwargs.get('save', True)
         self.debug = kwargs.get('debug', 0)
         self.pbar = kwargs.get('pbar', True)
@@ -41,6 +42,7 @@ class Scraper:
         self.logger = self._init_logger(**kwargs)
         self.session = self._validate_session(email, username, password, session, **kwargs)
         self.rate_limits = {}
+        self.proxy = proxy
 
     def users(self, screen_names: list[str], **kwargs) -> list[dict]:
         """
@@ -609,7 +611,8 @@ class Scraper:
     async def _process(self, operation: tuple, queries: list[dict], **kwargs):
         headers = self.session.headers if self.guest else get_headers(self.session)
         cookies = self.session.cookies
-        async with AsyncClient(limits=Limits(max_connections=MAX_ENDPOINT_LIMIT), headers=headers, cookies=cookies, timeout=20) as c:
+        async with AsyncClient(limits=Limits(max_connections=MAX_ENDPOINT_LIMIT),
+                headers=headers, cookies=cookies, timeout=20, proxy=self.proxy) as c:
             tasks = (self._paginate(c, operation, **q, **kwargs) for q in queries)
             if self.pbar:
                 return await tqdm_asyncio.gather(*tasks, desc=operation[-1])
