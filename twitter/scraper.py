@@ -34,6 +34,7 @@ if platform.system() != 'Windows':
 class Scraper:
     def __init__(self, email: str = None, username: str = None, password: str = None,
                  session: Client = None, proxy: str = None,**kwargs):
+        self.extract_limits = kwargs.get('extract_limits', 0)
         self.save = kwargs.get('save', True)
         self.debug = kwargs.get('debug', 0)
         self.pbar = kwargs.get('pbar', True)
@@ -642,7 +643,7 @@ class Scraper:
                 return
         while (dups < DUP_LIMIT) and cursor:
             prev_len = len(ids)
-            if prev_len >= limit:
+            if prev_len >= limit or (self.extract_limits and self.extract_limits < prev_len):
                 break
             try:
                 r = await self._query(client, operation, cursor=cursor, **kwargs)
