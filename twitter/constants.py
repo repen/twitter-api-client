@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from urllib.parse import urlencode
 
 # todo: not accurate measure. value will decrease as new gql features/variables are required. (actual limitation is request size, i.e. new gql features an variables contribute to total request size)
 MAX_GQL_CHAR_LIMIT = 4_200
@@ -99,7 +100,7 @@ class SpaceState:
 @dataclass
 class Operation:
     # todo: dynamically update
-    SearchTimeline = {'rawQuery': str, 'product': str}, 'nK1dw4oV3k4w5TdtcAdSww', 'SearchTimeline'
+    SearchTimeline = {'rawQuery': str, 'product': str}, 'yiE17ccAAu3qwM34bPYZkQ', 'SearchTimeline'
     AudioSpaceById = {'id': str}, 'fYAuJHiY3TmYdBmrRtIKhA', 'AudioSpaceById'
     AudioSpaceSearch = {'filter': str, 'query': str}, 'NTq79TuSz6fHj8lQaferJw', 'AudioSpaceSearch',
     UserByScreenName = {'screen_name': str}, 'sLVLhk0bGj3MVFEKTdax1w', 'UserByScreenName'
@@ -365,7 +366,9 @@ class Operation:
         'withMessageQueryHighlights': True,
         'withMessages': True,
     }
+
     default_features = {
+
         # new
         'c9s_tweet_anatomy_moderator_badge_enabled': True,
         'responsive_web_home_pinned_timelines_enabled': True,
@@ -405,7 +408,51 @@ class Operation:
         'tweetypie_unmention_optimization_enabled': True,
         'verified_phone_label_enabled': False,
         'vibe_api_enabled': True,
-        'view_counts_everywhere_api_enabled': True
+        'view_counts_everywhere_api_enabled': True,
+
+    }
+
+    default_features_for_search = {
+        "rweb_video_screen_enabled": False,
+        "profile_label_improvements_pcf_label_in_post_enabled": True,
+        "rweb_tipjar_consumption_enabled": True,
+
+        "verified_phone_label_enabled": False,
+        "creator_subscriptions_tweet_preview_api_enabled": True,
+        "responsive_web_graphql_timeline_navigation_enabled": True,
+
+        "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
+        "premium_content_api_read_enabled": False,
+        "communities_web_enable_tweet_community_results_fetch": True,
+        "c9s_tweet_anatomy_moderator_badge_enabled": True,
+
+        "responsive_web_grok_analyze_button_fetch_trends_enabled": False,
+        "responsive_web_grok_analyze_post_followups_enabled": True,
+        "responsive_web_jetfuel_frame": False,
+
+        "responsive_web_grok_share_attachment_enabled": True,
+        "articles_preview_enabled": True,
+        "responsive_web_edit_tweet_api_enabled": True,
+
+        "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
+        "view_counts_everywhere_api_enabled": True,
+        "longform_notetweets_consumption_enabled": True,
+
+        "responsive_web_twitter_article_tweet_consumption_enabled": True,
+        "tweet_awards_web_tipping_enabled": False,
+        "responsive_web_grok_show_grok_translated_post": False,
+
+        "responsive_web_grok_analysis_button_from_backend": True,
+        "creator_subscriptions_quote_tweet_preview_enabled": False,
+        "freedom_of_speech_not_reach_fetch_enabled": True,
+
+        "standardized_nudges_misinfo": True,
+        "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": True,
+        "longform_notetweets_rich_text_read_enabled": True,
+
+        "longform_notetweets_inline_media_enabled": True,
+        "responsive_web_grok_image_annotation_enabled": True,
+        "responsive_web_enhance_cards_enabled": False,
     }
 
 
@@ -670,3 +717,28 @@ recommendations_params = {
     'limit': 100,
     'ext': 'mediaStats,highlightedLabel,hasNftAvatar,voiceInfo,birdwatchPivot,superFollowMetadata,unmentionInfo,editControl'
 }
+
+
+def get_search_header(ct0: str, auth_token: str, referer: dict):
+
+    query_string = urlencode(referer)
+
+    SEARCH_HEADERS = {
+        "accept": "*/*",
+        "accept-language": "en,en_US;q=0.9",
+        "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+        "content-type": "application/json",
+        "priority": "u=1, i",
+        "referer": f"https://x.com/search?{query_string}",
+        "sec-ch-ua": '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
+        "sec-ch-ua-mobile": "?0",
+        "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+        "x-client-transaction-id": "76azw7eYdHgAiKn6qX+YXgD9cCA1TdY164DIBgcfsCSKePByxm6C3SC4IvX7HHhmyr67OuyatkvCHc/d1HffeF2l2yib7A",
+        "x-csrf-token": f"{ct0}",
+        "x-twitter-active-user": "yes",
+        "x-twitter-auth-type": "OAuth2Session",
+        "x-twitter-client-language": "en",
+        "cookie": f'guest_id=v1%3A174722139056319795; guest_id_marketing=v1%3A174722139056319795; guest_id_ads=v1%3A174722139056319795; personalization_id="v1_e76Rxwp0qTgufOm/PNe++Q=="; external_referer=padhuUp37zjgzgv1mFWxJ12Ozwit7owX|0|8e8t2xd8A2w%3D; kdt=JT9VTBJIYbohn2uACcD9ouQPizGtuw9FXzOnysGL; auth_token={auth_token}; ct0={ct0}; att=1-oAqaVRXvvasFi8OvmFArSjGOWs21RaKniammoJpu; twid=u%3D1920157723359883264; lang=en; __cf_bm=LMULFmmVBFz0vVsQQ0akVCrDwg2qa52yBM1xLGZUgmY-1747236764-1.0.1.1-rAjGvRDg9hv78sJxQoxGWj6MaBAsa6wq66SMIYBhBHRwnDdNhkGBzokNg6ia4w0Mm.IGRZcWlGIGs69ma.q01qQUu3Yc4hFQ7CSMG1bLN_c'
+    }
+
+    return SEARCH_HEADERS

@@ -7,6 +7,7 @@ import re
 import time
 from logging import Logger
 from pathlib import Path
+from typing import Tuple, Any
 
 import orjson
 from httpx import AsyncClient, Client
@@ -39,7 +40,11 @@ class Search:
     def __init__(self, email: str = None, username: str = None, password: str = None, session: Client = None, **kwargs):
         self.save = kwargs.get('save', True)
         self.debug = kwargs.get('debug', 0)
-        self.logger = self._init_logger(**kwargs)
+        # self.logger = self._init_logger(**kwargs)
+        self.logger = kwargs.get('logger') or self._init_logger(**kwargs)
+        self.cookies: dict = kwargs.get('cookies')
+        if not self.cookies:
+            raise ValueError('Cookies not specified')
         self.session = self._validate_session(email, username, password, session, **kwargs)
 
     def run(self, queries: list[dict], limit: int = math.inf, out: str = 'data/search_results', **kwargs):
@@ -47,7 +52,7 @@ class Search:
         out.mkdir(parents=True, exist_ok=True)
         return asyncio.run(self.process(queries, limit, out, **kwargs))
 
-    async def process(self, queries: list[dict], limit: int, out: Path, **kwargs) -> list:
+    async def process(self, queries: list[dict], limit: int, out: Path, **kwargs) -> tuple[Any]:
         async with AsyncClient(headers=get_headers(self.session)) as s:
             return await asyncio.gather(*(self.paginate(s, q, limit, out, **kwargs) for q in queries))
 
@@ -55,12 +60,12 @@ class Search:
         params = {
             'variables': {
                 'count': 20,
-                'querySource': 'typed_query',
+                'querySource': 'recent_search_click',
                 'rawQuery': query['query'],
                 'product': query['category']
             },
-            'features': Operation.default_features,
-            'fieldToggles': {'withArticleRichContentState': False},
+            'features': Operation.default_features_for_search,
+            # 'fieldToggles': {'withArticleRichContentState': False},
         }
 
         res = []
@@ -69,21 +74,39 @@ class Search:
         while True:
             if cursor:
                 params['variables']['cursor'] = cursor
-            data, entries, cursor = await self.backoff(lambda: self.get(client, params), **kwargs)
+            data, entries, cursor = await self.backoff(
+                lambda: self.get(client, params),
+                **kwargs
+            )
             res.extend(entries)
+            total |= set(find_key(entries, 'entryId'))
+            self.logger.info(f"LEN items {len(total)}")
             if len(entries) <= 2 or len(total) >= limit:  # just cursors
                 if self.debug:
                     self.logger.debug(f'[{GREEN}success{RESET}] Returned {len(total)} search results for {query["query"]}')
                 return res
-            total |= set(find_key(entries, 'entryId'))
+
             if self.debug:
                 self.logger.debug(f'{query["query"]}')
             if self.save:
                 (out / f'{time.time_ns()}.json').write_bytes(orjson.dumps(entries))
+            self.logger.info(f"sleep ")
+            time.sleep(60)
 
     async def get(self, client: AsyncClient, params: dict) -> tuple:
         _, qid, name = Operation.SearchTimeline
-        r = await client.get(f'https://twitter.com/i/api/graphql/{qid}/{name}', params=build_params(params))
+        r = await client.get(
+            f'https://x.com/i/api/graphql/{qid}/{name}',
+            params=build_params(params),
+            headers=get_search_header(
+                self.cookies['ct0'],
+                self.cookies['auth_token'],
+                referer={
+                    "q": params['variables']['rawQuery'],
+                    "src": "typed_query",
+                }
+            )
+        )
         data = r.json()
         cursor = self.get_cursor(data)
         entries = [y for x in find_key(data, 'entries') for y in x if re.search(r'^(tweet|user)-', y['entryId'])]
@@ -121,19 +144,19 @@ class Search:
                 await asyncio.sleep(t)
 
     def _init_logger(self, **kwargs) -> Logger:
-        if kwargs.get('debug'):
-            cfg = kwargs.get('log_config')
-            logging.config.dictConfig(cfg or LOG_CONFIG)
+        # if kwargs.get('debug'):
+        cfg = kwargs.get('log_config')
+        logging.config.dictConfig(cfg or LOG_CONFIG)
 
-            # only support one logger
-            logger_name = list(LOG_CONFIG['loggers'].keys())[0]
+        # only support one logger
+        logger_name = list(LOG_CONFIG['loggers'].keys())[0]
 
-            # set level of all other loggers to ERROR
-            for name in logging.root.manager.loggerDict:
-                if name != logger_name:
-                    logging.getLogger(name).setLevel(logging.ERROR)
+        # set level of all other loggers to ERROR
+        for name in logging.root.manager.loggerDict:
+            if name != logger_name:
+                logging.getLogger(name).setLevel(logging.ERROR)
 
-            return logging.getLogger(logger_name)
+        return logging.getLogger(logger_name)
 
     @staticmethod
     def _validate_session(*args, **kwargs):
