@@ -80,7 +80,7 @@ class Search:
             )
             res.extend(entries)
             total |= set(find_key(entries, 'entryId'))
-            self.logger.info(f"LEN items {len(total)}")
+            self.logger.debug(f"tweets {len(total)}")
             if len(entries) <= 2 or len(total) >= limit:  # just cursors
                 if self.debug:
                     self.logger.debug(f'[{GREEN}success{RESET}] Returned {len(total)} search results for {query["query"]}')
@@ -90,7 +90,7 @@ class Search:
                 self.logger.debug(f'{query["query"]}')
             if self.save:
                 (out / f'{time.time_ns()}.json').write_bytes(orjson.dumps(entries))
-            self.logger.info(f"sleep ")
+            self.logger.debug(f"sleep ")
             time.sleep(60)
 
     async def get(self, client: AsyncClient, params: dict) -> tuple:
