@@ -40,6 +40,14 @@ class NotCursorException(Exception):
     pass
 
 
+class UnauthorizedError(Exception):
+    pass
+
+
+class NotFoundError(Exception):
+    pass
+
+
 class Search:
     def __init__(self, email: str = None, username: str = None, password: str = None, session: Client = None, **kwargs):
         self.save = kwargs.get('save', True)
@@ -116,6 +124,13 @@ class Search:
                 }
             )
         )
+
+        if r.status_code == 401 or r.status_code == 403:
+            raise UnauthorizedError("Access denied")
+
+        if r.status_code == 404:
+            raise NotFoundError("Not found")
+
         data = r.json()
         cursor = self.get_cursor(data)
         entries = [y for x in find_key(data, 'entries') for y in x if re.search(r'^(tweet|user)-', y['entryId'])]
