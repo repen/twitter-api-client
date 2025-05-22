@@ -59,10 +59,11 @@ class Search:
             raise ValueError('Cookies not specified')
         self.session = self._validate_session(email, username, password, session, **kwargs)
         self.proxy = kwargs.get('proxy')
+        self.out = Path(kwargs.get('out', 'data'))
 
 
     def run(self, queries: list[dict], limit: int = math.inf, out: str = 'data/search_results', **kwargs):
-        out = Path(out)
+        out = self.out / "search_results"
         out.mkdir(parents=True, exist_ok=True)
         return asyncio.run(self.process(queries, limit, out, **kwargs))
 
