@@ -46,6 +46,8 @@ class Search:
         if not self.cookies:
             raise ValueError('Cookies not specified')
         self.session = self._validate_session(email, username, password, session, **kwargs)
+        self.proxy = kwargs.get('proxy')
+
 
     def run(self, queries: list[dict], limit: int = math.inf, out: str = 'data/search_results', **kwargs):
         out = Path(out)
@@ -53,7 +55,7 @@ class Search:
         return asyncio.run(self.process(queries, limit, out, **kwargs))
 
     async def process(self, queries: list[dict], limit: int, out: Path, **kwargs) -> tuple[Any]:
-        async with AsyncClient(headers=get_headers(self.session)) as s:
+        async with AsyncClient(headers=get_headers(self.session), proxies=self.proxy) as s:
             return await asyncio.gather(*(self.paginate(s, q, limit, out, **kwargs) for q in queries))
 
     async def paginate(self, client: AsyncClient, query: dict, limit: int, out: Path, **kwargs) -> list[dict]:
