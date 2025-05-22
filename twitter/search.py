@@ -131,7 +131,7 @@ class Search:
             raise UnauthorizedError("Access denied")
 
         if r.status_code == 404:
-            raise NotFoundError(f"Not found {params}")
+            raise NotFoundError(f"Not found")
 
         data = r.json()
         cursor = self.get_cursor(data)
