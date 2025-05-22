@@ -89,11 +89,11 @@ class Search:
         while True:
             if cursor:
                 params['variables']['cursor'] = cursor
-            # data, entries, cursor = await self.backoff(
-            #     lambda: self.get(client, params),
-            #     **kwargs
-            # )
-            data, entries, cursor = await self.get(client, params)
+            data, entries, cursor = await self.backoff(
+                lambda: self.get(client, params),
+                **kwargs
+            )
+            # data, entries, cursor = await self.get(client, params)
             res.extend(entries)
             total |= set(find_key(entries, 'entryId'))
             self.logger.debug(f"tweets {len(total)}")
@@ -163,7 +163,7 @@ class Search:
                 if i == retries:
                     if self.debug:
                         self.logger.debug(f'Max retries exceeded\n{e}')
-                    return
+                    raise e
                 t = 2 ** i + random.random()
                 if self.debug:
                     self.logger.debug(f'Retrying in {f"{t:.2f}"} seconds\t\t{e}')
