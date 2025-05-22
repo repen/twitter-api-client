@@ -88,10 +88,11 @@ class Search:
         while True:
             if cursor:
                 params['variables']['cursor'] = cursor
-            data, entries, cursor = await self.backoff(
-                lambda: self.get(client, params),
-                **kwargs
-            )
+            # data, entries, cursor = await self.backoff(
+            #     lambda: self.get(client, params),
+            #     **kwargs
+            # )
+            data, entries, cursor = await self.get(client, params)
             res.extend(entries)
             total |= set(find_key(entries, 'entryId'))
             self.logger.debug(f"tweets {len(total)}")
