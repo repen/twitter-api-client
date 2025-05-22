@@ -36,6 +36,10 @@ if platform.system() != 'Windows':
         ...
 
 
+class NotCursorException(Exception):
+    pass
+
+
 class Search:
     def __init__(self, email: str = None, username: str = None, password: str = None, session: Client = None, **kwargs):
         self.save = kwargs.get('save', True)
@@ -87,6 +91,9 @@ class Search:
                 if self.debug:
                     self.logger.debug(f'[{GREEN}success{RESET}] Returned {len(total)} search results for {query["query"]}')
                 return res
+
+            if not cursor:
+                raise NotCursorException("Cursor not found")
 
             if self.debug:
                 self.logger.debug(f'{query["query"]}')
