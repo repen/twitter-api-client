@@ -71,6 +71,7 @@ class Search:
             return await asyncio.gather(*(self.paginate(s, q, limit, out, **kwargs) for q in queries))
 
     async def paginate(self, client: AsyncClient, query: dict, limit: int, out: Path, **kwargs) -> list[dict]:
+        timeout = 45
         params = {
             'variables': {
                 'count': 20,
@@ -108,8 +109,8 @@ class Search:
                 self.logger.debug(f'{query["query"]}')
             if self.save:
                 (out / f'{time.time_ns()}.json').write_bytes(orjson.dumps(entries))
-            self.logger.debug(f"sleep ")
-            time.sleep(60)
+            self.logger.debug(f"sleep {timeout} seconds")
+            time.sleep(timeout)
 
     async def get(self, client: AsyncClient, params: dict) -> tuple:
         _, qid, name = Operation.SearchTimeline
@@ -125,7 +126,7 @@ class Search:
                 }
             )
         )
-
+        self.logger.debug(f"{r.status_code} {r.request.url}")
         if r.status_code == 401 or r.status_code == 403:
             raise UnauthorizedError("Access denied")
 
