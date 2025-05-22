@@ -126,12 +126,12 @@ class Search:
                 }
             )
         )
-        self.logger.debug(f"{r.status_code} {r.request.url}")
+        self.logger.debug(f"{r.status_code=} {r.request.url=}")
         if r.status_code == 401 or r.status_code == 403:
             raise UnauthorizedError("Access denied")
 
         if r.status_code == 404:
-            raise NotFoundError("Not found")
+            raise NotFoundError(f"Not found {params}")
 
         data = r.json()
         cursor = self.get_cursor(data)
