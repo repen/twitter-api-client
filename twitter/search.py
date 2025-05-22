@@ -159,6 +159,8 @@ class Search:
                 ids = set(find_key(data, 'entryId'))
                 if len(ids) >= 2:
                     return data, entries, cursor
+            except UnauthorizedError as err:
+                raise err
             except Exception as e:
                 if i == retries:
                     if self.debug:
