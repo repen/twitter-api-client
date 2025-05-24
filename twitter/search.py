@@ -68,7 +68,7 @@ class Search:
         return asyncio.run(self.process(queries, limit, out, **kwargs))
 
     async def process(self, queries: list[dict], limit: int, out: Path, **kwargs) -> tuple[Any]:
-        async with AsyncClient(headers=get_headers(self.session), proxies=self.proxy) as s:
+        async with AsyncClient(headers=get_headers(self.session), proxy=self.proxy) as s:
             return await asyncio.gather(*(self.paginate(s, q, limit, out, **kwargs) for q in queries))
 
     async def paginate(self, client: AsyncClient, query: dict, limit: int, out: Path, **kwargs) -> list[dict]:
