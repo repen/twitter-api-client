@@ -14,7 +14,7 @@ from httpx import AsyncClient, Client
 
 from .constants import *
 from .login import login
-from .util import get_headers, find_key, build_params
+from .util import get_headers, find_key, build_params, get_transaction_id, get_url_path
 
 reset = '\x1b[0m'
 colors = [f'\x1b[{i}m' for i in range(31, 37)]
@@ -60,6 +60,7 @@ class Search:
         self.session = self._validate_session(email, username, password, session, **kwargs)
         self.proxy = kwargs.get('proxy')
         self.out = Path(kwargs.get('out', 'data'))
+        self.ct = get_transaction_id()
 
 
     def run(self, queries: list[dict], limit: int = math.inf, out: str = 'data/search_results', **kwargs):
@@ -115,8 +116,11 @@ class Search:
 
     async def get(self, client: AsyncClient, params: dict) -> tuple:
         _, qid, name = Operation.SearchTimeline
+        url = f'https://x.com/i/api/graphql/{qid}/{name}'
+        path = "/i/api/graphql/yiE17ccAAu3qwM34bPYZkQ/SearchTimeline"
+        transaction_id = self.ct.generate_transaction_id(method='GET', path=path)
         r = await client.get(
-            f'https://x.com/i/api/graphql/{qid}/{name}',
+            url,
             params=build_params(params),
             headers=get_search_header(
                 self.cookies['ct0'],
@@ -124,7 +128,8 @@ class Search:
                 referer={
                     "q": params['variables']['rawQuery'],
                     "src": "typed_query",
-                }
+                },
+                x_client_transaction_id=transaction_id
             )
         )
         self.logger.debug(f"{r.status_code=} {r.request.url=}")

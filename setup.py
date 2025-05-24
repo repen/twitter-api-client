@@ -11,6 +11,9 @@ install_requires = [
     'm3u8',
     'websockets',
     'uvloop; platform_system != "Windows"',
+    'XClientTransaction',
+    'requests',
+    'beautifulsoup4'
 ]
 
 about = {}

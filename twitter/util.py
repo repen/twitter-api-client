@@ -10,8 +10,29 @@ import orjson
 from aiofiles.os import makedirs
 from httpx import Response, Client
 from textwrap import dedent
-
+import requests
+import bs4
+from x_client_transaction.utils import handle_x_migration, get_ondemand_file_url, generate_headers
+from x_client_transaction import ClientTransaction
 from .constants import GREEN, MAGENTA, RED, RESET, MAX_GQL_CHAR_LIMIT, USER_AGENTS, ORANGE
+
+
+def get_transaction_id():
+    # https://github.com/iSarabjitDhiman/XClientTransaction
+
+    session = requests.Session()
+    session.headers = generate_headers()
+    response = handle_x_migration(session)
+    ondemand_file_url = get_ondemand_file_url(response)
+    ondemand_file = session.get(url=ondemand_file_url)
+    ondemand_file_response = bs4.BeautifulSoup(ondemand_file.content, 'html.parser')
+    ct = ClientTransaction(response, ondemand_file_response)
+    return ct
+
+
+def get_url_path(url):
+    path = re.findall(r'https?://x\.com(.*?)\?', url)[0]
+    return path
 
 
 def init_session():

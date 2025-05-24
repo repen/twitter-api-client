@@ -719,7 +719,7 @@ recommendations_params = {
 }
 
 
-def get_search_header(ct0: str, auth_token: str, referer: dict):
+def get_search_header(ct0: str, auth_token: str, referer: dict, x_client_transaction_id: str):
 
     query_string = urlencode(referer)
 
@@ -728,17 +728,12 @@ def get_search_header(ct0: str, auth_token: str, referer: dict):
         "accept-language": "en,en_US;q=0.9",
         "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
         "content-type": "application/json",
-        "priority": "u=1, i",
         "referer": f"https://x.com/search?{query_string}",
-        "sec-ch-ua": '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
-        "sec-ch-ua-mobile": "?0",
         "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-        "x-client-transaction-id": "76azw7eYdHgAiKn6qX+YXgD9cCA1TdY164DIBgcfsCSKePByxm6C3SC4IvX7HHhmyr67OuyatkvCHc/d1HffeF2l2yib7A",
+        "x-client-transaction-id": x_client_transaction_id,
         "x-csrf-token": f"{ct0}",
-        "x-twitter-active-user": "yes",
         "x-twitter-auth-type": "OAuth2Session",
-        "x-twitter-client-language": "en",
-        "cookie": f'guest_id=v1%3A174722139056319795; guest_id_marketing=v1%3A174722139056319795; guest_id_ads=v1%3A174722139056319795; personalization_id="v1_e76Rxwp0qTgufOm/PNe++Q=="; external_referer=padhuUp37zjgzgv1mFWxJ12Ozwit7owX|0|8e8t2xd8A2w%3D; kdt=JT9VTBJIYbohn2uACcD9ouQPizGtuw9FXzOnysGL; auth_token={auth_token}; ct0={ct0}; att=1-oAqaVRXvvasFi8OvmFArSjGOWs21RaKniammoJpu; twid=u%3D1920157723359883264; lang=en; __cf_bm=LMULFmmVBFz0vVsQQ0akVCrDwg2qa52yBM1xLGZUgmY-1747236764-1.0.1.1-rAjGvRDg9hv78sJxQoxGWj6MaBAsa6wq66SMIYBhBHRwnDdNhkGBzokNg6ia4w0Mm.IGRZcWlGIGs69ma.q01qQUu3Yc4hFQ7CSMG1bLN_c'
+        "cookie": f'auth_token={auth_token}; ct0={ct0};'
     }
 
     return SEARCH_HEADERS
