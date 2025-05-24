@@ -73,7 +73,7 @@ class Search:
             return await asyncio.gather(*(self.paginate(s, q, limit, out, **kwargs) for q in queries))
 
     async def paginate(self, client: AsyncClient, query: dict, limit: int, out: Path, **kwargs) -> list[dict]:
-        timeout = 50
+        timeout = 10
         params = {
             'variables': {
                 'count': 20,
