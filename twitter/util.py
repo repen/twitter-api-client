@@ -23,9 +23,12 @@ def get_transaction_id():
     session = requests.Session()
     session.headers = generate_headers()
     response = handle_x_migration(session)
+
     ondemand_file_url = get_ondemand_file_url(response)
     ondemand_file = session.get(url=ondemand_file_url)
-    ondemand_file_response = bs4.BeautifulSoup(ondemand_file.content, 'html.parser')
+
+    # ondemand_file_response = bs4.BeautifulSoup(ondemand_file.content, 'html.parser')
+    ondemand_file_response = ondemand_file.text
     ct = ClientTransaction(response, ondemand_file_response)
     return ct
 
