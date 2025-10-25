@@ -8,13 +8,14 @@ import time
 from logging import Logger
 from pathlib import Path
 from typing import Tuple, Any
+from datetime import datetime
 
 import orjson
 from httpx import AsyncClient, Client
 
 from .constants import *
 from .login import login
-from .util import get_headers, find_key, build_params, get_transaction_id, get_url_path
+from .util import get_headers, find_key, build_params, get_transaction_id, get_url_path, default_log
 
 reset = '\x1b[0m'
 colors = [f'\x1b[{i}m' for i in range(31, 37)]
@@ -36,6 +37,9 @@ if platform.system() != 'Windows':
         ...
 
 
+logger = default_log(__name__)
+
+
 class NotCursorException(Exception):
     pass
 
@@ -45,6 +49,10 @@ class UnauthorizedError(Exception):
 
 
 class NotFoundError(Exception):
+    pass
+
+
+class RateLimitError(Exception):
     pass
 
 
@@ -61,7 +69,6 @@ class Search:
         self.proxy = kwargs.get('proxy')
         self.out = Path(kwargs.get('out', 'data'))
         self.ct = get_transaction_id()
-
 
     def run(self, queries: list[dict], limit: int = math.inf, out: str = 'data/search_results', **kwargs):
         out = self.out / "search_results"
@@ -98,20 +105,18 @@ class Search:
             # data, entries, cursor = await self.get(client, params)
             res.extend(entries)
             total |= set(find_key(entries, 'entryId'))
-            self.logger.debug(f"tweets {len(total)}")
+            logger.debug(f"tweets {len(total)}")
             if len(entries) <= 2 or len(total) >= limit:  # just cursors
-                if self.debug:
-                    self.logger.debug(f'[{GREEN}success{RESET}] Returned {len(total)} search results for {query["query"]}')
+                logger.debug(f'[{GREEN}success{RESET}] Returned {len(total)} search results for {query["query"]}')
                 return res
 
             if not cursor:
                 raise NotCursorException("Cursor not found")
 
-            if self.debug:
-                self.logger.debug(f'{query["query"]}')
+            logger.debug(f'{query["query"]}')
             if self.save:
                 (out / f'{time.time_ns()}.json').write_bytes(orjson.dumps(entries))
-            self.logger.debug(f"sleep {timeout} seconds")
+            logger.debug(f"sleep {timeout} seconds")
             time.sleep(timeout)
 
     async def get(self, client: AsyncClient, params: dict) -> tuple:
@@ -132,7 +137,7 @@ class Search:
                 x_client_transaction_id=transaction_id
             )
         )
-        self.logger.debug(f"{r.status_code=} {r.request.url=}")
+        logger.debug(f"{r.status_code=} {r.request.url=}")
         if r.status_code == 401 or r.status_code == 403:
             raise UnauthorizedError("Access denied")
 
@@ -159,8 +164,7 @@ class Search:
                 data, entries, cursor = await fn()
                 if errors := data.get('errors'):
                     for e in errors:
-                        if self.debug:
-                            self.logger.warning(f'{YELLOW}{e.get("message")}{RESET}')
+                        logger.warning(f'{YELLOW}{e.get("message")}{RESET}')
                         return [], [], ''
                 ids = set(find_key(data, 'entryId'))
                 if len(ids) >= 2:
@@ -169,16 +173,13 @@ class Search:
                 raise err
             except Exception as e:
                 if i == retries:
-                    if self.debug:
-                        self.logger.debug(f'Max retries exceeded\n{e}')
+                    logger.debug(f'Max retries exceeded\n{e}')
                     raise e
                 t = 2 ** i + random.random()
-                if self.debug:
-                    self.logger.debug(f'Retrying in {f"{t:.2f}"} seconds\t\t{e}')
+                logger.debug(f'Retrying in {f"{t:.2f}"} seconds\t\t{e}')
                 await asyncio.sleep(t)
 
     def _init_logger(self, **kwargs) -> Logger:
-        # if kwargs.get('debug'):
         cfg = kwargs.get('log_config')
         logging.config.dictConfig(cfg or LOG_CONFIG)
 
@@ -231,3 +232,53 @@ class Search:
         """ Save cookies to file """
         cookies = self.session.cookies
         Path(f'{fname or cookies.get("username")}.cookies').write_bytes(orjson.dumps(dict(cookies)))
+
+
+class Search2(Search):
+
+    async def get(self, client: AsyncClient, params: dict) -> tuple:
+        _, qid, name = Operation.SearchTimeline
+        url = f'https://x.com/i/api/graphql/{qid}/{name}'
+        path = "/i/api/graphql/yiE17ccAAu3qwM34bPYZkQ/SearchTimeline"
+
+        while True:
+            transaction_id = self.ct.generate_transaction_id(method='GET', path=path)
+            r = await client.get(
+                url,
+                params=build_params(params),
+                headers=get_search_header(
+                    self.cookies['ct0'],
+                    self.cookies['auth_token'],
+                    referer={
+                        "q": params['variables']['rawQuery'],
+                        "src": "typed_query",
+                    },
+                    x_client_transaction_id=transaction_id
+                )
+            )
+            logger.debug(f"{r.status_code=} {r.request.url=}")
+
+            if r.status_code == 401 or r.status_code == 403:
+                raise UnauthorizedError("Access denied")
+
+            if r.status_code == 404:
+                raise NotFoundError("Not found")
+
+            if r.status_code == 429:
+                rate_limit_reset = r.headers.get("x-rate-limit-reset")
+                if rate_limit_reset:
+                    # Calculate the time to wait until the rate limit resets
+                    wait_time = max(0, int(rate_limit_reset) - int(datetime.now().timestamp()))
+                    logger.warning(f"Rate limit hit. Waiting for {wait_time} seconds.")
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    raise RateLimitError("Rate limit hit, but no reset time provided.")
+
+            data = r.json()
+            cursor = self.get_cursor(data)
+            entries = [y for x in find_key(data, 'entries') for y in x if re.search(r'^(tweet|user)-', y['entryId'])]
+            # add on query info
+            for e in entries:
+                e['query'] = params['variables']['rawQuery']
+            return data, entries, cursor
