@@ -1,6 +1,8 @@
 import random
 import re
 import time
+import os
+import logging
 from logging import Logger
 from pathlib import Path
 from urllib.parse import urlsplit, urlencode, urlunsplit, parse_qs, quote
@@ -15,6 +17,44 @@ import bs4
 from x_client_transaction.utils import handle_x_migration, get_ondemand_file_url, generate_headers
 from x_client_transaction import ClientTransaction
 from .constants import GREEN, MAGENTA, RED, RESET, MAX_GQL_CHAR_LIMIT, USER_AGENTS, ORANGE
+
+
+def default_log(name, filename=None):
+    format = '%(asctime)s : %(lineno)d : %(name)s : %(levelname)s : %(message)s'
+    # создаём logger
+    logger = logging.getLogger(name)
+
+    if os.environ.get('BASIC_LOG_LEVEL'):
+        logging.basicConfig(
+            level=int(os.environ.get('BASIC_LOG_LEVEL')),
+            format=format
+        )
+
+    logger.setLevel(int(os.environ.get('LOGGING_LEVEL', 10)))
+    logger.propagate = False
+
+    # создаём консольный handler и задаём уровень
+    if filename:
+        ch = logging.FileHandler(filename)
+    else:
+        ch = logging.StreamHandler()
+
+    # создаём formatter
+    formatter = logging.Formatter(format)
+    # %(lineno)d :
+    # добавляем formatter в ch
+    ch.setFormatter(formatter)
+
+    # добавляем ch к logger
+    logger.addHandler(ch)
+
+    # logger.debug('debug message')
+    # logger.info('info message')
+    # logger.warn('warn message')
+    # logger.error('error message')
+    # logger.critical('critical message')
+    return logger
+
 
 
 def get_transaction_id():
